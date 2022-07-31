@@ -10,22 +10,28 @@ fi
 
 # functions
 function fuzzy_conda_activate() {
-    local env=$(conda env list | awk '3<=NR && NR<($Num) {print$1}' | fzf --query="$1")
-
-    if [[ is_active ]]; then
-        conda deactivate && conda activate $env
+    if [[ -z "$1" ]]; then
+        printf "No environment name provided.\n"
+        local env=$(conda env list | awk '3<=NR && NR<($Num) {print$1}' | fzf --query="$1")
+    elif [ -z "$(conda env list | grep $1)" ]; then
+        local env="$1"
+        printf "Environment '$env' not found.\n"
+        printf "Creating environment '$env'...\n"
+        conda create -n "$env"
     else
-        conda activate $env
+        local env="$1"
     fi
-}
 
-function is_active() {
-    if [ -z "$(echo $CONDA_DEFAULT_ENV)" ]; then
-        return 1
+    if [ "$(echo $CONDA_DEFAULT_ENV)" ]; then
+        printf "Deactivating environment '$CONDA_DEFAULT_ENV'...\n"
+        conda deactivate && conda activate "$env"
     else
-        return 0
+        conda activate "$env"
     fi
 }
 
 alias cda='fuzzy_conda_activate'
 alias cdd='conda deactivate'
+alias cdel='conda env list'
+alias cdl='conda list'
+alias cdc='conda create -n'
